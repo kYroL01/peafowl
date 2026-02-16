@@ -248,6 +248,78 @@ pfwl_status_t pfwl_dissect_L4(pfwl_state_t *state, const unsigned char *pkt,
                                  dissection_info, flow_info_private);
 }
 
+/**
+ * VxLAN header structure (8 bytes):
+ * - Flags (1 byte): bit 3 must be set (I flag = 0x08)
+ * - Reserved (3 bytes): must be zero
+ * - VNI (3 bytes): VXLAN Network Identifier
+ * - Reserved (1 byte): must be zero
+ */
+#define PFWL_VXLAN_HEADER_LEN 8
+#define PFWL_VXLAN_FLAGS_I 0x08
+
+/**
+ * Check if UDP payload is VxLAN and parse inner frame if so
+ * Returns 1 if VxLAN was detected and parsed, 0 otherwise
+ */
+static uint8_t pfwl_check_and_parse_vxlan(pfwl_state_t *state,
+                                          const unsigned char *payload,
+                                          size_t payload_length,
+                                          double timestamp,
+                                          pfwl_dissection_info_t *dissection_info) {
+  /* Check if this is UDP on VxLAN port */
+  if (dissection_info->l4.protocol != IPPROTO_UDP ||
+      (dissection_info->l4.port_src != port_vxlan &&
+       dissection_info->l4.port_dst != port_vxlan)) {
+    return 0;
+  }
+
+  /* Minimum packet size: VxLAN header (8 bytes) + inner Ethernet frame (14 bytes min) */
+  if (payload_length < PFWL_VXLAN_HEADER_LEN + 14) {
+    return 0;
+  }
+
+  /* Check VxLAN flags - bit 3 (I flag) must be set, other bits must be zero */
+  uint8_t flags = get_u8(payload, 0);
+  if (flags != PFWL_VXLAN_FLAGS_I) {
+    return 0;
+  }
+
+  /* Check that reserved fields are zero */
+  if (get_u8(payload, 1) != 0 || get_u8(payload, 2) != 0 ||
+      get_u8(payload, 3) != 0 || get_u8(payload, 7) != 0) {
+    return 0;
+  }
+
+  /* VxLAN detected - parse inner Ethernet frame */
+  const unsigned char *inner_frame = payload + PFWL_VXLAN_HEADER_LEN;
+  size_t inner_length = payload_length - PFWL_VXLAN_HEADER_LEN;
+
+  /* Parse inner L2 frame (Ethernet) */
+  pfwl_dissection_info_t inner_dissection;
+  memset(&inner_dissection, 0, sizeof(pfwl_dissection_info_t));
+  
+  /* Parse L2 layer - assuming Ethernet */
+  pfwl_status_t l2_status = pfwl_dissect_L2(inner_frame, PFWL_PROTO_L2_EN10MB, &inner_dissection);
+  if (l2_status < PFWL_STATUS_OK) {
+    return 0;
+  }
+
+  /* Parse inner L3 layer */
+  pfwl_status_t inner_status = pfwl_dissect_from_L3(state,
+                                                     inner_frame + inner_dissection.l2.length,
+                                                     inner_length - inner_dissection.l2.length,
+                                                     timestamp,
+                                                     &inner_dissection);
+
+  /* Copy inner dissection info to outer dissection_info */
+  /* Keep outer L3/L4 info (the VxLAN tunnel), but use inner L7 info */
+  dissection_info->l7 = inner_dissection.l7;
+  dissection_info->flow_info = inner_dissection.flow_info;
+
+  return 1;
+}
+
 pfwl_status_t pfwl_dissect_from_L4(pfwl_state_t *state,
                                    const unsigned char *pkt, size_t length,
                                    double timestamp,
@@ -300,6 +372,12 @@ pfwl_status_t pfwl_dissect_from_L4(pfwl_state_t *state,
   } else {
     l7_length = length - dissection_info->l4.length;
     l7_pkt = pkt + dissection_info->l4.length;
+  }
+
+  /* Check for VxLAN and parse inner frame if detected */
+  if (l7_length > 0 && pfwl_check_and_parse_vxlan(state, l7_pkt, l7_length, timestamp, dissection_info)) {
+    /* VxLAN was detected and inner frame was parsed */
+    return PFWL_STATUS_OK;
   }
 
   uint8_t skip_l7 = 0;

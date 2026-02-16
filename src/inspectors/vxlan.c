@@ -51,9 +51,9 @@ uint8_t check_vxlan(pfwl_state_t *state, const unsigned char *app_data,
     return PFWL_PROTOCOL_NO_MATCHES;
   }
 
-  /* Check VxLAN flags - bit 3 (I flag) must be set */
+  /* Check VxLAN flags - bit 3 (I flag) must be set, other bits must be zero */
   uint8_t flags = get_u8(app_data, 0);
-  if ((flags & PFWL_VXLAN_FLAGS_I) == 0) {
+  if (flags != PFWL_VXLAN_FLAGS_I) {
     return PFWL_PROTOCOL_NO_MATCHES;
   }
 

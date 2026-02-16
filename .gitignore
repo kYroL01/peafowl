@@ -27,3 +27,4 @@ test/testSkype
 test/testUtils
 test/testSkipL7
 build/
+_codeql_build_dir/

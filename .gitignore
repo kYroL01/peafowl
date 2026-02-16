@@ -26,3 +26,4 @@ test/testSSL
 test/testSkype
 test/testUtils
 test/testSkipL7
+build/

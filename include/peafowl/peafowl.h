@@ -212,6 +212,7 @@ typedef enum {
   PFWL_PROTO_L7_KERBEROS, ///< Kerberos
   PFWL_PROTO_L7_TOR,      ///< Tor
   PFWL_PROTO_L7_GIT,      ///< Git
+  PFWL_PROTO_L7_VXLAN,    ///< VxLAN
   PFWL_PROTO_L7_NUM,      ///< Dummy value to indicate the number of protocols
   PFWL_PROTO_L7_NOT_DETERMINED, ///< Dummy value to indicate that the protocol
                                 ///< has not been identified yet

@@ -101,7 +101,11 @@ static void* pfwl_field_tags_load_L7(pfwl_field_id_t field, const char* fileName
     d.ParseStream(isw);
 
     if (d.HasParseError()){
-      delete db;
+      if(pfwl_get_L7_field_type(field) == PFWL_FIELD_TYPE_STRING){
+        delete static_cast<pfwl_field_matching_db_t*>(db);
+      }else if(pfwl_get_L7_field_type(field) == PFWL_FIELD_TYPE_MMAP){
+        delete static_cast<std::map<std::string, pfwl_field_matching_db_t>*>(db);
+      }
       return NULL;
     }
 

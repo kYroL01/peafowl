@@ -101,6 +101,7 @@ enum protocol_check_statuses {
 #define port_kerberos 0x5800      /** 88 **/
 #define port_tor 0x2923           /** 9001 **/
 #define port_git 0xCA24           /** 9418 **/
+#define port_vxlan 0xB512         /** 4789 **/
 #elif __BYTE_ORDER == __BIG_ENDIAN
 #define port_ssh 0x0016           /* 22 **/
 #define port_smtp_1 0x0019        /** 25 **/
@@ -149,6 +150,7 @@ enum protocol_check_statuses {
 #define port_kerberos 0x0058      /** 88 **/
 #define port_tor 0x2329           /** 9001 **/
 #define port_git 0x24CA           /** 9418 **/
+#define port_vxlan 0x12B5         /** 4789 **/
 #else
 #error "Please fix <bits/endian.h>"
 #endif

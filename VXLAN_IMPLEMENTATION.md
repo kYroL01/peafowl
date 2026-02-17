@@ -3,14 +3,10 @@
 ## Overview
 This implementation adds VxLAN (Virtual eXtensible Local Area Network) transparent decapsulation support to the Peafowl DPI framework.
 
-## What is VxLAN?
-VxLAN is a network virtualization technology that encapsulates Layer 2 Ethernet frames within Layer 4 UDP packets. It was designed to address the scalability problems associated with large cloud computing deployments.
-
 **Key Features:**
 - Uses UDP port 4789
 - Provides 24-bit segment ID (VNI - VXLAN Network Identifier)
 - Defined in RFC 7348
-- Commonly used in data center network virtualization and overlay networks
 
 ## Implementation Approach
 
@@ -70,7 +66,7 @@ static uint8_t pfwl_check_and_parse_vxlan(pfwl_state_t *state,
 ```
 
 **Validation Steps:**
-1. Check if protocol is UDP on port 4789
+1. Check if the protocol is UDP on port 4789
 2. Verify minimum packet size (22 bytes: 8-byte header + 14-byte Ethernet frame)
 3. Validate I flag (bit 3 must be 0x08, all other flags must be 0)
 4. Verify all reserved fields are zero
@@ -106,35 +102,6 @@ pfwl_terminate(state);
 - **Test PCAP**: test/pcaps/vxlan.pcap
 - **Validation**: VxLAN header validation logic tested
 - **Security**: Passed CodeQL security scan with no vulnerabilities
-
-## Build Instructions
-```bash
-mkdir build && cd build
-cmake .. -DENABLE_TESTS=OFF -DENABLE_C=ON
-make -j$(nproc)
-```
-
-VxLAN decapsulation is automatically included in the build.
-
-## Comparison with IP-in-IP Tunneling
-
-Peafowl already supports IP-in-IP tunneling (4in4, 6in4, 6in6, 4in6) in `parsing_l3.c`. VxLAN follows the same transparent tunneling approach:
-
-| Feature | IP-in-IP | VxLAN |
-|---------|----------|-------|
-| Layer | L3 tunneling | L2-in-L4 tunneling |
-| Location | `parsing_l3.c` | `parsing_l4.c` |
-| Detection | IP protocol field | UDP port 4789 |
-| Inner parsing | Recursive L3 | Recursive L2→L3 |
-| Transparent | Yes | Yes |
-| Reports tunnel protocol | No | No |
-
-## Compliance
-- **RFC 7348**: Virtual eXtensible Local Area Network (VXLAN)
-- All flag bits validated per specification
-- Reserved fields checked for zero values
-- Minimum packet size enforced
-- Strict I-flag validation
 
 ## Security Summary
 - No vulnerabilities detected by CodeQL scan

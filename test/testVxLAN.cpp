@@ -23,7 +23,7 @@ TEST(VxLANTest, Decapsulation) {
     packet.insert(packet.end(), {0x08, 0x00});                           // EtherType: IPv4
     
     // Outer IPv4 header (20 bytes minimal)
-    packet.insert(packet.end(), {0x45, 0x00, 0x00, 0x54});  // Version, IHL, TOS, Total Length
+    packet.insert(packet.end(), {0x45, 0x00, 0x00, 0x46});  // Version, IHL, TOS, Total Length (70 bytes)
     packet.insert(packet.end(), {0x00, 0x01, 0x00, 0x00});  // ID, Flags, Fragment Offset
     packet.insert(packet.end(), {0x40, 0x11, 0x00, 0x00});  // TTL, Protocol (UDP), Checksum
     packet.insert(packet.end(), {0xc0, 0xa8, 0x01, 0x0a});  // Source IP: 192.168.1.10
@@ -32,7 +32,7 @@ TEST(VxLANTest, Decapsulation) {
     // Outer UDP header (8 bytes)
     packet.insert(packet.end(), {0x30, 0x39});  // Source port (12345)
     packet.insert(packet.end(), {0x12, 0xb5});  // Dest port (4789 - VxLAN)
-    packet.insert(packet.end(), {0x00, 0x40});  // Length
+    packet.insert(packet.end(), {0x00, 0x32});  // Length (50 bytes)
     packet.insert(packet.end(), {0x00, 0x00});  // Checksum
     
     // VxLAN header (8 bytes)
